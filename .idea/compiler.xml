@@ -8,6 +8,7 @@
         <outputRelativeToContentRoot value="true" />
         <module name="ssg_02_mysql" />
         <module name="ssg_03_jdbc" />
+        <module name="ssg_04_maven" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
