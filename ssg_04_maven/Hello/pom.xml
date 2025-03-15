@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <!--pom文件版本号-->
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--坐标 ：当前工程打成jar包后安装到本地仓库的坐标-->
+    <groupId>com.atguigu</groupId>
+    <artifactId>Hello</artifactId>
+    <version>1.0</version>
+
+    <!-- Jar包信息 -->
+    <dependencies>
+        <!--Jar信息相当于导入了一个jar包，jar包在本地仓库，本地仓库没有就去中央仓库下载-->
+        <dependency>
+            <!--  工程所依赖的jar包的坐标  -->
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.9</version>
+            <!--  依赖的范围-->
+            <!--  <scope>compile</scope>-->
+            <!-- <scope>test</scope>-->
+             <scope>compile</scope>
+        </dependency>
+    </dependencies>
+
+
+</project>

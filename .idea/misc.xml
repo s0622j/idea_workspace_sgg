@@ -8,6 +8,13 @@
         <option value="$PROJECT_DIR$/ssg_03_jdbc/pom.xml" />
         <option value="$PROJECT_DIR$/ssg_02_mysql/pom.xml" />
         <option value="$PROJECT_DIR$/ssg_04_maven/pom.xml" />
+        <option value="$PROJECT_DIR$/ssg_04_maven/Hello/pom.xml" />
+        <option value="$PROJECT_DIR$/ssg_04_maven/HelloFriend/pom.xml" />
+        <option value="$PROJECT_DIR$/ssg_04_maven/A/pom.xml" />
+        <option value="$PROJECT_DIR$/ssg_04_maven/B/pom.xml" />
+        <option value="$PROJECT_DIR$/ssg_04_maven/C/pom.xml" />
+        <option value="$PROJECT_DIR$/ssg_04_maven/AChild/pom.xml" />
+        <option value="$PROJECT_DIR$/ssg_04_maven/AParent/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">

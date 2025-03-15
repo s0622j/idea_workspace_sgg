@@ -6,9 +6,15 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="A" />
+        <module name="B" />
+        <module name="C" />
+        <module name="Hello" />
+        <module name="AChild" />
+        <module name="HelloFriend" />
+        <module name="ssg_04_maven" />
         <module name="ssg_02_mysql" />
         <module name="ssg_03_jdbc" />
-        <module name="ssg_04_maven" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
