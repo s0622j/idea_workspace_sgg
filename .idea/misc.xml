@@ -15,6 +15,7 @@
         <option value="$PROJECT_DIR$/ssg_04_maven/C/pom.xml" />
         <option value="$PROJECT_DIR$/ssg_04_maven/AChild/pom.xml" />
         <option value="$PROJECT_DIR$/ssg_04_maven/AParent/pom.xml" />
+        <option value="$PROJECT_DIR$/ssg_05_hadoop/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">

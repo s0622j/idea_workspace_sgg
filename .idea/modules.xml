@@ -7,7 +7,6 @@
       <module fileurl="file://$PROJECT_DIR$/ssg_04_maven/B/B.iml" filepath="$PROJECT_DIR$/ssg_04_maven/B/B.iml" />
       <module fileurl="file://$PROJECT_DIR$/ssg_04_maven/C/C.iml" filepath="$PROJECT_DIR$/ssg_04_maven/C/C.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/idea_workspace_sgg.iml" filepath="$PROJECT_DIR$/.idea/idea_workspace_sgg.iml" />
-      <module fileurl="file://$PROJECT_DIR$/sgg_01_java/sgg_01_java.iml" filepath="$PROJECT_DIR$/sgg_01_java/sgg_01_java.iml" />
       <module fileurl="file://$PROJECT_DIR$/ssg_03_jdbc/ssg_03_jdbc.iml" filepath="$PROJECT_DIR$/ssg_03_jdbc/ssg_03_jdbc.iml" />
     </modules>
   </component>

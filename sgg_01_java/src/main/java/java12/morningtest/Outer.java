@@ -18,7 +18,7 @@ public class Outer {
     }
 
     public static void main(String[] args) {
-        Outer.Inner inner = new Outer.Inner();
+        Inner inner = new Inner();
         inner.methodOne();
     }
 

@@ -8,10 +8,12 @@
         <outputRelativeToContentRoot value="true" />
         <module name="A" />
         <module name="B" />
+        <module name="sgg_01_java" />
         <module name="C" />
         <module name="Hello" />
         <module name="AChild" />
         <module name="HelloFriend" />
+        <module name="ssg_05_hadoop" />
         <module name="ssg_04_maven" />
         <module name="ssg_02_mysql" />
         <module name="ssg_03_jdbc" />

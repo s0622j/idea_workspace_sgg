@@ -12,5 +12,6 @@ public class TestOne {
         // 如果希望访问其他包的类，则必须使用import关键字将需要访问的类导入当前包
         Scanner input = new Scanner(System.in);
         System.out.println("hello");
+        System.out.println("如果希望访问其他包的类，则必须使用import关键字将需要访问的类导入当前包");
     }
 }
