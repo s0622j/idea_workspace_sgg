@@ -1,2 +1,72 @@
-# Project exclude paths
-/ssg_03_jdbc/target/
+# Default ignored files
+/shelf/
+/workspace.xml
+# Editor-based HTTP Client requests
+/httpRequests/
+# Datasource local storage ignored files
+/dataSources/
+/dataSources.local.xml
+
+
+# 编译后的class文件,忽略所有以[.class]结尾的文件
+*.class
+# 日志文件,忽略所有以[.log]结尾的文件.
+*.log
+# BlueJ 文件,忽略所有以[.ctxt]结尾的文件.
+*.ctxt
+# Mobile Tools for Java (J2ME),忽略[.mtj.tmp/]目录及其子文件.
+.mtj.tmp/
+# 打包文件,忽略所有以[.jar]或[.war]或[.nar]或[.ear]或[.zip]或[.tar.gz]或[rar]结尾的文件.
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+
+.idea/*
+.idea/compiler.xml
+.idea/encodings.xml
+.idea/modules.xml
+*.iml
+
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+# Avoid ignoring Maven wrapper jar file (.jar files are usually ignored)
+!/.mvn/wrapper/maven-wrapper.jar
+
+
+*.sw?
+.#*
+*#
+*~
+.classpath
+.project
+.settings/
+bin
+build
+target
+dependency-reduced-pom.xml
+*.sublime-*
+/scratch
+.gradle
+Guardfile
+README.html
+*.iml
+.idea
+
+#.gitignore规则不生效
+#.gitignore只能忽略那些原来没有被 track 的文件，如果某些文件已经被纳入了版本管理中，则修改.gitignore是无效的。
+#解决方法就是先把本地缓存删除**（改变成未track状态）**，然后再提交:
+#git rm -r --cached .
+#git add .
+#git commit -m 'update .gitignore'

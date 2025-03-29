@@ -13,6 +13,6 @@ public class MainTest {
     public static void main(String[] args) {
         System.out.println(args.length);
         System.out.println(Arrays.toString(args));
-        System.out.println("在运行按钮上右键--->点击Edit 类名.main() --->");
+        System.out.println("在运行按钮上右键--->点击Edit 类名.main() --->sas");
     }
 }
