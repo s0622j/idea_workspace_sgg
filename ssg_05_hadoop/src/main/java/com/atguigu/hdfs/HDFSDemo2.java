@@ -25,8 +25,8 @@ public class HDFSDemo2 {
 
         //2.具体操作
         fs.copyFromLocalFile(false,true,
-                new Path("D:\\io\\hdfs\\longge.txt"),
-                new Path("/demo"));
+                new Path("D:\\test\\t_app_delay_sign_currentday_push-20250324.csv"),
+                new Path("/input"));
 
         //3.关闭资源
         fs.close();
