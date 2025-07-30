@@ -1,0 +1,620 @@
+1. 复制案例
+flume1.conf 
+#Named
+a1.sources = r1
+a1.channels = c1 c2
+a1.sinks = k1 k2
+
+#Source
+a1.sources.r1.type = TAILDIR
+a1.sources.r1.filegroups = f1
+a1.sources.r1.filegroups.f1 = /opt/module/flume-1.9.0/jobs/taildir/.*\.txt
+a1.sources.r1.positionFile = /opt/module/flume-1.9.0/jobs/position/position.json
+
+#channel selector
+a1.sources.r1.selector.type = replicating
+
+#Channel
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 10000
+a1.channels.c1.transactionCapacity = 100
+
+a1.channels.c2.type = memory
+a1.channels.c2.capacity = 10000
+a1.channels.c2.transactionCapacity = 100
+
+#Sink
+a1.sinks.k1.type = avro
+a1.sinks.k1.hostname = localhost
+a1.sinks.k1.port = 7777
+
+a1.sinks.k2.type = avro
+a1.sinks.k2.hostname = localhost
+a1.sinks.k2.port = 8888
+
+
+#Bind
+a1.sources.r1.channels = c1 c2  
+a1.sinks.k1.channel = c1 
+a1.sinks.k2.channel = c2 
+
+
+
+
+flume2.conf
+
+a2.sources = r1
+a2.channels = c1
+a2.sinks = k1 
+
+#Source
+a2.sources.r1.type = avro
+a2.sources.r1.bind = localhost
+a2.sources.r1.port = 7777
+
+#Channel
+a2.channels.c1.type = memory
+a2.channels.c1.capacity = 10000
+a2.channels.c1.transactionCapacity = 100
+
+#Sink
+a2.sinks.k1.type = hdfs
+a2.sinks.k1.hdfs.path = hdfs://hadoop102:8020/flume/%Y%m%d/%H
+a2.sinks.k1.hdfs.filePrefix = logs-
+a2.sinks.k1.hdfs.round = true
+a2.sinks.k1.hdfs.roundValue = 1
+a2.sinks.k1.hdfs.roundUnit = hour
+a2.sinks.k1.hdfs.useLocalTimeStamp = true
+a2.sinks.k1.hdfs.batchSize = 100
+a2.sinks.k1.hdfs.fileType = DataStream
+a2.sinks.k1.hdfs.rollInterval = 60
+a2.sinks.k1.hdfs.rollSize = 134217700
+a2.sinks.k1.hdfs.rollCount = 0
+
+#Bind
+a2.sources.r1.channels = c1 
+a2.sinks.k1.channel = c1 
+
+
+flume3.conf 
+
+#Named
+a3.sources = r1
+a3.channels = c1
+a3.sinks = k1 
+
+#Source
+a3.sources.r1.type = avro
+a3.sources.r1.bind = localhost
+a3.sources.r1.port = 8888
+
+#Channel
+a3.channels.c1.type = memory
+a3.channels.c1.capacity = 10000
+a3.channels.c1.transactionCapacity = 100
+
+#Sink
+a3.sinks.k1.type = file_roll
+a3.sinks.k1.sink.directory = /opt/module/flume-1.9.0/jobs/fileroll
+
+#Bind
+a3.sources.r1.channels = c1 
+a3.sinks.k1.channel = c1 
+
+
+启动:
+flume-ng agent -c $FLUME_HOME/conf -f $FLUME_HOME/jobs/replicating/flume3.conf -n a3 -Dflume.root.logger=INFO,console
+
+flume-ng agent -c $FLUME_HOME/conf -f $FLUME_HOME/jobs/replicating/flume2.conf -n a2 -Dflume.root.logger=INFO,console
+
+flume-ng agent -c $FLUME_HOME/conf -f $FLUME_HOME/jobs/replicating/flume1.conf -n a1 -Dflume.root.logger=INFO,console
+
+======================================================================
+
+2. 负载均衡案例
+flume1.conf 
+#Named
+a1.sources = r1
+a1.channels = c1
+a1.sinks = k1 k2
+
+#Source
+a1.sources.r1.type = netcat
+a1.sources.r1.bind = localhost
+a1.sources.r1.port = 6666
+
+#channel selector
+a1.sources.r1.selector.type = replicating
+
+#Channel
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 10000
+a1.channels.c1.transactionCapacity = 100
+
+#Sink
+a1.sinks.k1.type = avro
+a1.sinks.k1.hostname = localhost
+a1.sinks.k1.port = 7777
+
+a1.sinks.k2.type = avro
+a1.sinks.k2.hostname = localhost
+a1.sinks.k2.port = 8888
+
+#Sink processor
+a1.sinkgroups = g1
+a1.sinkgroups.g1.sinks = k1 k2
+a1.sinkgroups.g1.processor.type = load_balance
+a1.sinkgroups.g1.processor.selector = random 
+
+
+#Bind
+a1.sources.r1.channels = c1
+a1.sinks.k1.channel = c1 
+a1.sinks.k2.channel = c1
+
+
+
+
+flume2.conf
+
+a2.sources = r1
+a2.channels = c1
+a2.sinks = k1 
+
+#Source
+a2.sources.r1.type = avro
+a2.sources.r1.bind = localhost
+a2.sources.r1.port = 7777
+
+#Channel
+a2.channels.c1.type = memory
+a2.channels.c1.capacity = 10000
+a2.channels.c1.transactionCapacity = 100
+
+#Sink
+a2.sinks.k1.type = logger
+
+#Bind
+a2.sources.r1.channels = c1 
+a2.sinks.k1.channel = c1 
+
+
+flume3.conf 
+
+#Named
+a3.sources = r1
+a3.channels = c1
+a3.sinks = k1 
+
+#Source
+a3.sources.r1.type = avro
+a3.sources.r1.bind = localhost
+a3.sources.r1.port = 8888
+
+#Channel
+a3.channels.c1.type = memory
+a3.channels.c1.capacity = 10000
+a3.channels.c1.transactionCapacity = 100
+
+#Sink
+a3.sinks.k1.type = logger
+
+#Bind
+a3.sources.r1.channels = c1 
+a3.sinks.k1.channel = c1 
+
+
+启动:
+flume-ng agent -c $FLUME_HOME/conf -f $FLUME_HOME/jobs/loadbalancing/flume3.conf -n a3 -Dflume.root.logger=INFO,console
+
+flume-ng agent -c $FLUME_HOME/conf -f $FLUME_HOME/jobs/loadbalancing/flume2.conf -n a2 -Dflume.root.logger=INFO,console
+
+flume-ng agent -c $FLUME_HOME/conf -f $FLUME_HOME/jobs/loadbalancing/flume1.conf -n a1 -Dflume.root.logger=INFO,console
+
+
+======================================================================
+
+3. 故障转移案例
+flume1.conf 
+#Named
+a1.sources = r1
+a1.channels = c1
+a1.sinks = k1 k2
+
+#Source
+a1.sources.r1.type = netcat
+a1.sources.r1.bind = localhost
+a1.sources.r1.port = 6666
+
+#channel selector
+a1.sources.r1.selector.type = replicating
+
+#Channel
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 10000
+a1.channels.c1.transactionCapacity = 100
+
+#Sink
+a1.sinks.k1.type = avro
+a1.sinks.k1.hostname = localhost
+a1.sinks.k1.port = 7777
+
+a1.sinks.k2.type = avro
+a1.sinks.k2.hostname = localhost
+a1.sinks.k2.port = 8888
+
+#Sink processor
+a1.sinkgroups = g1
+a1.sinkgroups.g1.sinks = k1 k2
+a1.sinkgroups.g1.processor.type = failover
+a1.sinkgroups.g1.processor.priority.k1 = 5
+a1.sinkgroups.g1.processor.priority.k2 = 10
+
+
+#Bind
+a1.sources.r1.channels = c1
+a1.sinks.k1.channel = c1 
+a1.sinks.k2.channel = c1
+
+
+
+
+flume2.conf
+
+a2.sources = r1
+a2.channels = c1
+a2.sinks = k1 
+
+#Source
+a2.sources.r1.type = avro
+a2.sources.r1.bind = localhost
+a2.sources.r1.port = 7777
+
+#Channel
+a2.channels.c1.type = memory
+a2.channels.c1.capacity = 10000
+a2.channels.c1.transactionCapacity = 100
+
+#Sink
+a2.sinks.k1.type = logger
+
+#Bind
+a2.sources.r1.channels = c1 
+a2.sinks.k1.channel = c1 
+
+
+flume3.conf 
+
+#Named
+a3.sources = r1
+a3.channels = c1
+a3.sinks = k1 
+
+#Source
+a3.sources.r1.type = avro
+a3.sources.r1.bind = localhost
+a3.sources.r1.port = 8888
+
+#Channel
+a3.channels.c1.type = memory
+a3.channels.c1.capacity = 10000
+a3.channels.c1.transactionCapacity = 100
+
+#Sink
+a3.sinks.k1.type = logger
+
+#Bind
+a3.sources.r1.channels = c1 
+a3.sinks.k1.channel = c1 
+
+
+启动:
+flume-ng agent -c $FLUME_HOME/conf -f $FLUME_HOME/jobs/failover/flume3.conf -n a3 -Dflume.root.logger=INFO,console
+
+flume-ng agent -c $FLUME_HOME/conf -f $FLUME_HOME/jobs/failover/flume2.conf -n a2 -Dflume.root.logger=INFO,console
+
+flume-ng agent -c $FLUME_HOME/conf -f $FLUME_HOME/jobs/failover/flume1.conf -n a1 -Dflume.root.logger=INFO,console
+
+
+======================================================================
+
+4. 聚合案例
+flume1.conf 
+#Named
+a1.sources = r1
+a1.channels = c1
+a1.sinks = k1
+
+#Source
+a1.sources.r1.type = TAILDIR
+a1.sources.r1.filegroups = f1
+a1.sources.r1.filegroups.f1 = /opt/module/flume-1.9.0/jobs/taildir/.*\.txt
+a1.sources.r1.positionFile = /opt/module/flume-1.9.0/jobs/position/position.json
+
+#Channel
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 10000
+a1.channels.c1.transactionCapacity = 100
+
+#Sink
+a1.sinks.k1.type = avro
+a1.sinks.k1.hostname = hadoop104
+a1.sinks.k1.port = 8888
+
+#Bind
+a1.sources.r1.channels = c1
+a1.sinks.k1.channel = c1 
+
+
+
+flume2.conf
+
+a2.sources = r1
+a2.channels = c1
+a2.sinks = k1 
+
+#Source
+a2.sources.r1.type = netcat
+a2.sources.r1.bind = localhost
+a2.sources.r1.port = 6666
+
+#Channel
+a2.channels.c1.type = memory
+a2.channels.c1.capacity = 10000
+a2.channels.c1.transactionCapacity = 100
+
+#Sink
+a2.sinks.k1.type = avro
+a2.sinks.k1.hostname = hadoop104
+a2.sinks.k1.port = 8888
+
+#Bind
+a2.sources.r1.channels = c1 
+a2.sinks.k1.channel = c1 
+
+
+flume3.conf 
+
+#Named
+a3.sources = r1
+a3.channels = c1
+a3.sinks = k1 
+
+#Source
+a3.sources.r1.type = avro
+a3.sources.r1.bind = hadoop104
+a3.sources.r1.port = 8888
+
+#Channel
+a3.channels.c1.type = memory
+a3.channels.c1.capacity = 10000
+a3.channels.c1.transactionCapacity = 100
+
+#Sink
+a3.sinks.k1.type = logger
+
+#Bind
+a3.sources.r1.channels = c1 
+a3.sinks.k1.channel = c1 
+
+
+启动:
+flume-ng agent -c $FLUME_HOME/conf -f $FLUME_HOME/jobs/aggre/flume3.conf -n a3 -Dflume.root.logger=INFO,console
+
+flume-ng agent -c $FLUME_HOME/conf -f $FLUME_HOME/jobs/aggre/flume2.conf -n a2 -Dflume.root.logger=INFO,console
+
+flume-ng agent -c $FLUME_HOME/conf -f $FLUME_HOME/jobs/aggre/flume1.conf -n a1 -Dflume.root.logger=INFO,console
+
+===================================================================================
+
+5. 多路案例
+flume1.conf 
+#Named
+a1.sources = r1
+a1.channels = c1 c2 c3
+a1.sinks = k1 k2 k3
+
+#Source
+a1.sources.r1.type = netcat
+a1.sources.r1.bind = localhost
+a1.sources.r1.port = 5555
+
+#channel selector
+a1.sources.r1.selector.type = multiplexing
+a1.sources.r1.selector.header = title
+a1.sources.r1.selector.mapping.at = c1
+a1.sources.r1.selector.mapping.st = c2
+a1.sources.r1.selector.default = c3
+
+# Interceptor
+a1.sources.r1.interceptors = i1
+a1.sources.r1.interceptors.i1.type = com.atguigu.flume.interceptor.EventHeaderInterceptor$MyBuilder
+
+#Channel
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 10000
+a1.channels.c1.transactionCapacity = 100
+
+a1.channels.c2.type = memory
+a1.channels.c2.capacity = 10000
+a1.channels.c2.transactionCapacity = 100
+
+
+a1.channels.c3.type = memory
+a1.channels.c3.capacity = 10000
+a1.channels.c3.transactionCapacity = 100
+
+
+#Sink
+a1.sinks.k1.type = avro
+a1.sinks.k1.hostname = localhost
+a1.sinks.k1.port = 6666
+
+a1.sinks.k2.type = avro
+a1.sinks.k2.hostname = localhost
+a1.sinks.k2.port = 7777
+
+a1.sinks.k3.type = avro
+a1.sinks.k3.hostname = localhost
+a1.sinks.k3.port = 8888
+
+#Bind
+a1.sources.r1.channels = c1 c2 c3   
+a1.sinks.k1.channel = c1 
+a1.sinks.k2.channel = c2 
+a1.sinks.k3.channel = c3 
+
+
+
+
+flume2.conf
+
+a2.sources = r1
+a2.channels = c1
+a2.sinks = k1 
+
+#Source
+a2.sources.r1.type = avro
+a2.sources.r1.bind = localhost
+a2.sources.r1.port = 6666
+
+#Channel
+a2.channels.c1.type = memory
+a2.channels.c1.capacity = 10000
+a2.channels.c1.transactionCapacity = 100
+
+#Sink
+a2.sinks.k1.type = logger
+
+#Bind
+a2.sources.r1.channels = c1 
+a2.sinks.k1.channel = c1 
+
+
+flume3.conf 
+
+#Named
+a3.sources = r1
+a3.channels = c1
+a3.sinks = k1 
+
+#Source
+a3.sources.r1.type = avro
+a3.sources.r1.bind = localhost
+a3.sources.r1.port = 7777
+
+#Channel
+a3.channels.c1.type = memory
+a3.channels.c1.capacity = 10000
+a3.channels.c1.transactionCapacity = 100
+
+#Sink
+a3.sinks.k1.type = logger
+
+#Bind
+a3.sources.r1.channels = c1 
+a3.sinks.k1.channel = c1 
+
+
+
+flume4.conf 
+
+#Named
+a4.sources = r1
+a4.channels = c1
+a4.sinks = k1 
+
+#Source
+a4.sources.r1.type = avro
+a4.sources.r1.bind = localhost
+a4.sources.r1.port = 8888
+
+#Channel
+a4.channels.c1.type = memory
+a4.channels.c1.capacity = 10000
+a4.channels.c1.transactionCapacity = 100
+
+#Sink
+a4.sinks.k1.type = logger
+
+#Bind
+a4.sources.r1.channels = c1 
+a4.sinks.k1.channel = c1 
+
+
+启动:
+flume-ng agent -c $FLUME_HOME/conf -f $FLUME_HOME/jobs/multi/flume4.conf -n a4 -Dflume.root.logger=INFO,console
+
+flume-ng agent -c $FLUME_HOME/conf -f $FLUME_HOME/jobs/multi/flume3.conf -n a3 -Dflume.root.logger=INFO,console
+
+flume-ng agent -c $FLUME_HOME/conf -f $FLUME_HOME/jobs/multi/flume2.conf -n a2 -Dflume.root.logger=INFO,console
+
+flume-ng agent -c $FLUME_HOME/conf -f $FLUME_HOME/jobs/multi/flume1.conf -n a1 -Dflume.root.logger=INFO,console
+
+======================================================================
+
+6. 自定义Source
+flume4.conf 
+
+#Named
+a1.sources = r1
+a1.channels = c1
+a1.sinks = k1 
+
+#Source
+a1.sources.r1.type = com.atguigu.flume.source.MySource
+a1.sources.r1.prefix = log--
+
+#Channel
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 10000
+a1.channels.c1.transactionCapacity = 100
+
+#Sink
+a1.sinks.k1.type = logger
+
+#Bind
+a1.sources.r1.channels = c1 
+a1.sinks.k1.channel = c1 
+
+flume-ng agent -c $FLUME_HOME/conf -f $FLUME_HOME/jobs/mysource-flume-logger.conf -n a1 -Dflume.root.logger=INFO,console
+
+======================================================================
+
+7. 自定义Sink
+
+
+#Named
+a1.sources = r1
+a1.channels = c1
+a1.sinks = k1 
+
+#Source
+a1.sources.r1.type = com.atguigu.flume.source.MySource
+a1.sources.r1.prefix = log--
+
+#Channel
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 10000
+a1.channels.c1.transactionCapacity = 100
+
+#Sink
+a1.sinks.k1.type = com.atguigu.flume.sink.MySink
+
+#Bind
+a1.sources.r1.channels = c1 
+a1.sinks.k1.channel = c1 
+
+flume-ng agent -c $FLUME_HOME/conf -f $FLUME_HOME/jobs/mysource-flume-mysink.conf -n a1 -Dflume.root.logger=INFO,console
+
+
+8. ganglia监控
+flume-ng agent \
+-c $FLUME_HOME/conf \
+-n a1 \
+-f $FLUME_HOME/jobs/netcat-flume-logger.conf \
+-Dflume.root.logger=INFO,console \
+-Dflume.monitoring.type=ganglia \
+-Dflume.monitoring.hosts=hadoop102:8649
+
+

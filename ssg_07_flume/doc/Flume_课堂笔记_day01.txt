@@ -1,0 +1,220 @@
+1. 入门案例1: 监控端口数据
+配置文件名: netcat-flume-logger.conf
+
+#Named
+a1.sources = r1
+a1.channels = c1
+a1.sinks = k1 
+
+#Source
+a1.sources.r1.type = netcat
+a1.sources.r1.bind = localhost
+a1.sources.r1.port = 6666
+
+#Channel
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 10000
+a1.channels.c1.transactionCapacity = 100
+
+#Sink
+a1.sinks.k1.type = logger
+
+#Bind
+a1.sources.r1.channels = c1 
+a1.sinks.k1.channel = c1 
+
+
+启动: flume-ng agent --conf $FLUME_HOME/conf --conf-file $FLUME_HOME/jobs/netcat-flume-logger.conf --name a1 -Dflume.root.logger=INFO,console
+
+
+
+2. 入门案例 2.1  实时监控单个追加文件,将内容打印到控制台
+配置文件名字: exec-flume-logger.conf
+
+#Named
+a1.sources = r1
+a1.channels = c1
+a1.sinks = k1 
+
+#Source
+a1.sources.r1.type = exec 
+a1.sources.r1.command = tail -f /opt/module/flume-1.9.0/jobs/tail.txt
+
+#Channel
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 10000
+a1.channels.c1.transactionCapacity = 100
+
+#Sink
+a1.sinks.k1.type = logger
+
+#Bind
+a1.sources.r1.channels = c1 
+a1.sinks.k1.channel = c1 
+
+
+启动: flume-ng agent --conf $FLUME_HOME/conf --conf-file $FLUME_HOME/jobs/netcat-flume-logger.conf --name a1 -Dflume.root.logger=INFO,console
+
+启动: flume-ng agent -c  $FLUME_HOME/conf  -f  $FLUME_HOME/jobs/exec-flume-logger.conf -n a1 -Dflume.root.logger=INFO,console
+
+
+3. 入门案例 2.2  实时监控单个追加文件,将内容上传到HDFS中
+配置文件名字: exec-flume-hdfs.conf
+
+#Named
+a1.sources = r1
+a1.channels = c1
+a1.sinks = k1 
+
+#Source
+a1.sources.r1.type = exec 
+a1.sources.r1.command = tail -f /opt/module/flume-1.9.0/jobs/tail.txt
+
+#Channel
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 10000
+a1.channels.c1.transactionCapacity = 100
+
+#Sink
+a1.sinks.k1.type = hdfs
+a1.sinks.k1.hdfs.path = hdfs://hadoop102:8020/flume/%Y%m%d/%H
+#上传文件的前缀
+a1.sinks.k1.hdfs.filePrefix = logs-
+#是否按照时间滚动文件夹
+a1.sinks.k1.hdfs.round = true
+#多少时间单位创建一个新的文件夹
+a1.sinks.k1.hdfs.roundValue = 1
+#重新定义时间单位
+a1.sinks.k1.hdfs.roundUnit = hour
+#是否使用本地时间戳
+a1.sinks.k1.hdfs.useLocalTimeStamp = true
+#积攒多少个Event才flush到HDFS一次
+a1.sinks.k1.hdfs.batchSize = 100
+#设置文件类型，可支持压缩
+a1.sinks.k1.hdfs.fileType = DataStream
+#多久生成一个新的文件
+a1.sinks.k1.hdfs.rollInterval = 60
+#设置每个文件的滚动大小
+a1.sinks.k1.hdfs.rollSize = 134217700
+#文件的滚动与Event数量无关
+a1.sinks.k1.hdfs.rollCount = 0
+
+#Bind
+a1.sources.r1.channels = c1 
+a1.sinks.k1.channel = c1 
+
+启动: flume-ng agent -c  $FLUME_HOME/conf  -f  $FLUME_HOME/jobs/exec-flume-hdfs.conf -n a1 -Dflume.root.logger=INFO,console
+
+
+
+4. 入门案例 3  实时监控目录下的新文件,将内容上传到HDFS中
+配置文件名字: spooling-flume-hdfs.conf
+
+#Named
+a1.sources = r1
+a1.channels = c1
+a1.sinks = k1 
+
+#Source
+a1.sources.r1.type = spooldir
+a1.sources.r1.spoolDir = /opt/module/flume-1.9.0/jobs/spooling
+a1.sources.r1.fileSuffix = .COMPLETED
+a1.sources.r1.ignorePattern = .*\.tmp
+
+
+#Channel
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 10000
+a1.channels.c1.transactionCapacity = 100
+
+#Sink
+a1.sinks.k1.type = hdfs
+a1.sinks.k1.hdfs.path = hdfs://hadoop102:8020/flume/%Y%m%d/%H
+#上传文件的前缀
+a1.sinks.k1.hdfs.filePrefix = logs-
+#是否按照时间滚动文件夹
+a1.sinks.k1.hdfs.round = true
+#多少时间单位创建一个新的文件夹
+a1.sinks.k1.hdfs.roundValue = 1
+#重新定义时间单位
+a1.sinks.k1.hdfs.roundUnit = hour
+#是否使用本地时间戳
+a1.sinks.k1.hdfs.useLocalTimeStamp = true
+#积攒多少个Event才flush到HDFS一次
+a1.sinks.k1.hdfs.batchSize = 100
+#设置文件类型，可支持压缩
+a1.sinks.k1.hdfs.fileType = DataStream
+#多久生成一个新的文件
+a1.sinks.k1.hdfs.rollInterval = 60
+#设置每个文件的滚动大小
+a1.sinks.k1.hdfs.rollSize = 134217700
+#文件的滚动与Event数量无关
+a1.sinks.k1.hdfs.rollCount = 0
+
+#Bind
+a1.sources.r1.channels = c1 
+a1.sinks.k1.channel = c1 
+
+启动: flume-ng agent -c  $FLUME_HOME/conf  -f  $FLUME_HOME/jobs/spooling-flume-hdfs.conf -n a1 -Dflume.root.logger=INFO,console
+
+
+
+5. 入门案例4   实时监控目录下多个追加文件,将内容上传到HDFS中
+配置文件名字: taildir-flume-hdfs.conf
+
+#Named
+a1.sources = r1
+a1.channels = c1
+a1.sinks = k1 
+
+#Source
+a1.sources.r1.type = TAILDIR
+a1.sources.r1.filegroups = f1 f2
+a1.sources.r1.filegroups.f1 = /opt/module/flume-1.9.0/jobs/taildir/.*\.txt
+a1.sources.r1.filegroups.f2 = /opt/module/flume-1.9.0/jobs/taildir/.*\.log
+a1.sources.r1.positionFile = /opt/module/flume-1.9.0/jobs/position/position.json
+
+#Channel
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 10000
+a1.channels.c1.transactionCapacity = 100
+
+#Sink
+a1.sinks.k1.type = hdfs
+a1.sinks.k1.hdfs.path = hdfs://hadoop102:8020/flume/%Y%m%d/%H
+#上传文件的前缀
+a1.sinks.k1.hdfs.filePrefix = logs-
+#是否按照时间滚动文件夹
+a1.sinks.k1.hdfs.round = true
+#多少时间单位创建一个新的文件夹
+a1.sinks.k1.hdfs.roundValue = 1
+#重新定义时间单位
+a1.sinks.k1.hdfs.roundUnit = hour
+#是否使用本地时间戳
+a1.sinks.k1.hdfs.useLocalTimeStamp = true
+#积攒多少个Event才flush到HDFS一次
+a1.sinks.k1.hdfs.batchSize = 100
+#设置文件类型，可支持压缩
+a1.sinks.k1.hdfs.fileType = DataStream
+#多久生成一个新的文件
+a1.sinks.k1.hdfs.rollInterval = 60
+#设置每个文件的滚动大小
+a1.sinks.k1.hdfs.rollSize = 134217700
+#文件的滚动与Event数量无关
+a1.sinks.k1.hdfs.rollCount = 0
+
+#Bind
+a1.sources.r1.channels = c1 
+a1.sinks.k1.channel = c1 
+
+启动: flume-ng agent -c  $FLUME_HOME/conf  -f  $FLUME_HOME/jobs/taildir-flume-hdfs.conf -n a1 -Dflume.root.logger=INFO,console
+
+
+
+[{"inode":1317393,"pos":6,"file":"/opt/module/flume-1.9.0/jobs/taildir/file1.txt"},
+{"inode":1317394,"pos":6,"file":"/opt/module/flume-1.9.0/jobs/taildir/file2.txt"}]
+
+[{"inode":1317393,"pos":6,"file":"/opt/module/flume-1.9.0/jobs/taildir/file1.txt"},
+{"inode":1317394,"pos":6,"file":"/opt/module/flume-1.9.0/jobs/taildir/file2.txt"},
+{"inode":1317395,"pos":5,"file":"/opt/module/flume-1.9.0/jobs/taildir/log1.log"},
+{"inode":1317396,"pos":5,"file":"/opt/module/flume-1.9.0/jobs/taildir/log2.log"}]
