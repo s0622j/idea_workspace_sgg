@@ -1,0 +1,342 @@
+1. DDL - 数据库
+   1) 建库语法
+
+CREATE DATABASE [IF NOT EXISTS] database_name
+[COMMENT database_comment]
+[LOCATION hdfs_path]
+[WITH DBPROPERTIES (property_name=property_value, ...)];
+
+   2) 创建库
+create database if not exists mydb   
+comment "my first db"
+with dbproperties("createtime"="2021-04-24");
+
+
+create database if not exists mydb1 
+location "/mydb1";
+
+   3) 查看库
+show databases; 
+desc database mydb ; 
+desc database extended mydb ; 
+
+   4) 修改库 
+alter database mydb set dbproperties("createtime"="2020-04-24","author"="wyh");
+   
+   5) 删除库
+drop database mydb1; 
+
+drop database mydb cascade ; 
+
+
+2. DDL - 表
+
+  1) 建表语法
+CREATE [EXTERNAL] TABLE [IF NOT EXISTS] table_name   -- EXTERANL: 外部表
+[(col_name data_type [COMMENT col_comment], ...)]  -- 列名 列类型 列描述信息  ....
+[COMMENT table_comment] -- 表描述信息
+[PARTITIONED BY (col_name data_type [COMMENT col_comment], ...)] -- 创建分区表指定分区字段  分区列名  列类型
+[CLUSTERED BY (col_name, col_name, ...) -- 创建分桶表指定分桶字段   分桶列名
+[SORTED BY (col_name [ASC|DESC], ...)] INTO num_buckets BUCKETS]  -- 指定分桶数
+[ROW FORMAT delimited fields terminated by ... ] -- 指定一条数据字段与字段的分割符
+[collection items terminated by  ... ] -- 指定集合元素与元素的分割符
+[map keys terminated by ... ] -- 指定map的kv的分割符
+[STORED AS file_format] -- 指定文件存储格式，默认为 textfile
+[LOCATION hdfs_path] -- 指定表在hdfs中对应的路径
+[TBLPROPERTIES (property_name=property_value, ...)] -- 指定表的属性
+[AS select_statement] -- 基于某个查询建表
+
+  2) 建表
+create database mydb ;
+
+1001,zhangsan
+1002,lisi
+1003,wangwu
+
+
+
+create table if not exists test1(
+  id int comment "this's id ",
+  name string  comment "this 's  name"
+)
+comment "this 's table"
+row format delimited fields terminated by ','
+STORED as textfile 
+TBLPROPERTIES("createtime"="2021-04-24") ;
+
+create table if not exists test2(
+  id int ,
+  name string 
+)
+row format delimited fields terminated by ','
+location "/test2.table"
+
+
+create table if not exists test3(
+  id int ,
+  name string 
+)
+row format delimited fields terminated by ','
+location "/mydata" ;
+
+
+create table if not exists test4(
+  id int ,
+  name string 
+)
+row format delimited fields terminated by ',' ;
+
+create external table if not exists test5(
+  id int ,
+  name string 
+)
+row format delimited fields terminated by ',' ;
+
+alter table test4 set tblproperties('EXTERNAL'='TRUE');
+alter table test5 set tblproperties('EXTERNAL'='FALSE');
+
+  3) 查看表
+show tables
+desc test1;
+desc formatted test1; 
+
+  4) 修改表
+1001	zhangsan	10000.1
+1002	lisi	10000.2
+1003	wangwu	10000.3
+
+create table emp(
+  id int , 
+  name string, 
+  salary double  
+) 
+row format delimited fields terminated by '\t';  
+
+alter table emp rename to emptest ; 
+
+alter table emptest change column salary sal double ;
+
+alter table emptest add columns (addr string, deptno int );
+
+alter table emptest replace columns (empid int, empname string);
+
+
+3. DML - 数据导入
+
+  1) load 
+create table student(id string, name string) row format delimited fields terminated by '\t';
+load data local inpath '/opt/module/hive-3.1.2/datas/student.txt' into table student; 	
+
+load data local inpath '/opt/module/hive-3.1.2/datas/student1.txt' into table student; 
+
+load data local inpath '/opt/module/hive-3.1.2/datas/student2.txt' overwrite into table student; 
+
+load data inpath '/hivedatas/student.txt' into table student; 
+
+  2) insert
+
+insert into student values(1017,'ss17'),(1018,'ss18'),(1019,'ss19');  
+
+create table student2(id string, name string) row format delimited fields terminated by '\t';
+
+insert into student2 select id, name from student ;  
+  
+  3) as select 
+
+create table student3 as select id, name from student ;
+
+  4) location
+create table student4(id string, name string) 
+row format delimited fields terminated by '\t'
+location '/student4' ;
+
+  5) import 
+import table emptest2 from '/emptest';
+
+4. DML - 数据导出
+
+  1) insert
+insert overwrite local directory '/opt/module/hive-3.1.2/datas/insert-result' select * from  emptest ;  
+
+insert overwrite local directory '/opt/module/hive-3.1.2/datas/insert-result' 
+row format delimited fields terminated by ':'
+select * from emptest ;
+
+insert overwrite  directory '/insert-result' 
+row format delimited fields terminated by ':'
+select * from emptest ;
+
+  如果表中的列的值为null,导出到文件中以后通过\N来表示. 
+
+  2) export 
+export table emptest to '/emptest' ;
+
+
+
+5. 查询
+  1） 查询语法
+SELECT [ALL | DISTINCT] select_expr, select_expr, ...  -- 查哪些
+  FROM table_reference  -- 从哪查
+  [WHERE where_condition]  -- 过滤条件
+  [GROUP BY col_list] -- 分组
+  [HAVING having_contiditon] -- 分组后过滤条件
+  [ORDER BY col_list] -- 全局排序
+  [CLUSTER BY col_list  -- 分区排序
+    |
+   [DISTRIBUTE BY col_list]  -- 分区
+   [SORT BY col_list] -- 区内排序
+  ]
+ [LIMIT number] -- 限制返回的条数
+
+
+  2) 分组
+分组之后，select后面只能跟组标识(分组字段) 和 聚合函数(分组函数)
+
+
+计算emp表每个部门的平均工资
+select deptno ,avg(sal) avg_sal from emp group by deptno 
+
+计算emp每个部门中每个岗位的最高薪水
+select deptno ,job ,max(sal) max_sal from emp group by deptno,job ; 
+
+计算emp中每个部门中最高薪水的那个人. 
+
+select deptno ,max(sal) max_sal ,ename  from emp group by deptno  -- 错误的
+
+
+select 
+   e.deptno , e.sal , e.ename 
+from 
+emp e 
+join 
+(select deptno ,max(sal) max_sal from emp group by deptno ) a 
+on e.deptno = a.deptno  and e.sal = a.max_sal ;
+
+
+
+计算emp中除了CLERK岗位之外的剩余员工的每个部门的平均工资大于1000的部门和平均工资。
+
+select
+  deptno , avg(sal) avg_sal 
+from 
+emp
+where job != 'CLERK'
+group by deptno 
+having avg_sal >2000 ;
+
+
+6. join
+
+  1) Join方式 
+
+  内连接   A inner join B  on ....
+     内连接的结果集取交集
+
+
+  外连接  
+    主表(驱动表) 和  从表(匹配表)
+    外连接的结果集主表的所有数据 +  从表中与主表匹配的数据. 
+
+    左外连接  A left outer join B  on ....    A 主 B 从
+             B right outer Join A  on.... 
+
+    右外连接  A right outer join B  on ....   A 从 B 主
+             B left outer join  A  on ....
+
+
+  自连接  满外连接(full outer join ) 
+
+  2) emp 和 dept共有的数据(内连接)
+select
+  e.ename, d.deptno 
+from
+ emp e inner join dept  d
+on e.deptno = d.deptno 
+
+  3) emp所有的数据  和  dept中与emp匹配的数据
+
+select
+  e.ename, d.deptno
+from
+ emp e left outer join dept d 
+on e.deptno = d.deptno  ; 
+
+
+select
+  e.ename, d.deptno
+from
+ dept d right outer join emp e 
+on e.deptno = d.deptno  ; 
+
+
+  4) dept中所有的数据 和  emp中与dept匹配的数据
+
+select
+ e.ename, d.deptno
+from
+dept d left outer join emp e 
+on d.deptno = e.deptno ;
+
+select
+ e.ename, d.deptno
+from
+emp e  right outer join dept d 
+on d.deptno = e.deptno ;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,478 @@
+1. 行转列
+  1) 相关函数: 
+     concat(): 字符串拼接
+     concat_ws(): 字符串拼接 , CONCAT_WS must be "string or array<string>"
+     collect_set(): 去重汇总
+     collect_list(): 汇总
+  2) 数据
++-------------------+----------------------------+-------------------------+
+| person_info.name  | person_info.constellation  | person_info.blood_type  |
++-------------------+----------------------------+-------------------------+
+| 孙悟空               | 白羊座                        | A                       |
+| 大海                 | 射手座                        | A                       |
+| 宋宋                 | 白羊座                        | B                       |
+| 猪八戒               | 白羊座                        | A                       |
+| 凤姐                 | 射手座                        | A                       |
+| 苍老师               | 白羊座                        | B                       |
++-------------------+----------------------------+-------------------------+
+
+  3）需求
+射手座,A            大海|凤姐
+白羊座,A            孙悟空|猪八戒
+白羊座,B            宋宋|苍老师
+
+  4）SQL
+
+① 将  constellation  和 blood_type 拼接到一起
+
+select
+  name, 
+  concat_ws(',',constellation,blood_type) c_b
+from 
+  person_info  =>t1
+
+② 按照 c_b分组，在组内将name进行汇总
+select
+  t1.c_b,  concat_ws('|',collect_set(t1.name)) names
+from 
+ (select
+  name, 
+  concat_ws(',',constellation,blood_type) c_b
+from 
+  person_info)t1
+group by t1.c_b 
+
+
+=======================================================================
+
+2. 列转行
+
+  1） 相关函数
+      explode(): 将数组或者map拆分成多行
+      LATERAL VIEW : 侧写表(虚拟表)
+
+  2)  数据
++-------------------+----------------------+
+| movie_info.movie  | movie_info.category  |
++-------------------+----------------------+
+| 《疑犯追踪》            | 悬疑,动作,科幻,剧情          |
+| 《Lie to me》          | 悬疑,警匪,动作,心理,剧情       |
+| 《战狼2》              | 战争,动作,灾难             |
++-------------------+----------------------+
+  3） 结果
+《疑犯追踪》      悬疑
+《疑犯追踪》      动作
+《疑犯追踪》      科幻
+《疑犯追踪》      剧情
+《Lie to me》   悬疑
+《Lie to me》   警匪
+《Lie to me》   动作
+《Lie to me》   心理
+《Lie to me》   剧情
+《战狼2》        战争
+《战狼2》        动作
+《战狼2》        灾难
+
+  4) SQL
+select
+   movie , 
+   category_name
+from 
+   movie_info 
+LATERAL view  explode(split(category,','))  movie_info_tmp  as category_name ;
+
+=========================================================================
+
+3. 窗口函数
+
+  1) 数据
++----------------+---------------------+----------------+
+| business.name  | business.orderdate  | business.cost  |
++----------------+---------------------+----------------+
+| jack           | 2017-01-01          | 10             |
+| tony           | 2017-01-02          | 15             |
+| jack           | 2017-02-03          | 23             |
+| tony           | 2017-01-04          | 29             |
+| jack           | 2017-01-05          | 46             |
+| jack           | 2017-04-06          | 42             |
+| tony           | 2017-01-07          | 50             |
+| jack           | 2017-01-08          | 55             |
+| mart           | 2017-04-08          | 62             |
+| mart           | 2017-04-09          | 68             |
+| neil           | 2017-05-10          | 12             |
+| mart           | 2017-04-11          | 75             |
+| neil           | 2017-06-12          | 80             |
+| mart           | 2017-04-13          | 94             |
++----------------+---------------------+----------------+  
+
+  2)需求
+
+   需求一: 查询在2017年4月份购买过的顾客及总人数
+① 查出2017年4月份购买过的顾客
+select
+  name, orderdate, cost 
+from 
+  business 
+where month(orderdate) = '4' 
+
+select
+  name, orderdate, cost 
+from 
+  business 
+where substring(orderdate,0,7) = '2017-04'  =>t1
+
++-------+-------------+-------+
+| name  |  orderdate  | cost  |
++-------+-------------+-------+
+| jack  | 2017-04-06  | 42    |
+| mart  | 2017-04-08  | 62    |
+| mart  | 2017-04-09  | 68    |
+| mart  | 2017-04-11  | 75    |
+| mart  | 2017-04-13  | 94    |
++-------+-------------+-------+
+
+
+②  按照name分组，求count
+
+select
+  t1.name, count(t1.name) over()
+from 
+  (select
+  name, orderdate, cost 
+from 
+  business 
+where substring(orderdate,0,7) = '2017-04')t1
+group by t1.name   ; 
+
+
+
+第二种方式: 
+
+select
+  distinct(t1.name)
+from 
+  (select
+  name, orderdate, cost 
+from 
+  business 
+where substring(orderdate,0,7) = '2017-04')t1
++----------+
+| t1.name  |
++----------+
+| jack     |
+| mart     |
++----------+
+select 
+   t2.name, count(t2.name) over()
+from 
+(select
+  distinct(t1.name)
+from 
+  (select
+  name, orderdate, cost 
+from 
+  business 
+where substring(orderdate,0,7) = '2017-04')t1) t2
+
++----------+-----------------+
+| t2.name  | count_window_0  |
++----------+-----------------+
+| mart     | 2               |
+| jack     | 2               |
++----------+-----------------+
+
+
+需求二: 查询顾客的购买明细及所有顾客的月购买总额
+ 
+select
+  name, 
+  orderdate, 
+  cost , 
+  sum(cost) over(partition by substring(orderdate,0,7))  month_cost
+from
+  business 
++-------+-------------+-------+-------------+
+| name  |  orderdate  | cost  | month_cost  |
++-------+-------------+-------+-------------+
+| jack  | 2017-01-01  | 10    | 205         |
+| jack  | 2017-01-08  | 55    | 205         |
+| tony  | 2017-01-07  | 50    | 205         |
+| jack  | 2017-01-05  | 46    | 205         |
+| tony  | 2017-01-04  | 29    | 205         |
+| tony  | 2017-01-02  | 15    | 205         |
+| jack  | 2017-02-03  | 23    | 23          |
+| mart  | 2017-04-13  | 94    | 341         |
+| jack  | 2017-04-06  | 42    | 341         |
+| mart  | 2017-04-11  | 75    | 341         |
+| mart  | 2017-04-09  | 68    | 341         |
+| mart  | 2017-04-08  | 62    | 341         |
+| neil  | 2017-05-10  | 12    | 12          |
+| neil  | 2017-06-12  | 80    | 80          |
++-------+-------------+-------+-------------+
+
+
+需求二: 查询顾客的购买明细及每个顾客的月购买总额
+
+select
+  name, 
+  orderdate,
+  cost, 
+  sum(cost) over(partition by name, substring(orderdate,0,7)) name_month_cost
+from 
+  business
++-------+-------------+-------+------------------+
+| name  |  orderdate  | cost  | name_month_cost  |
++-------+-------------+-------+------------------+
+| jack  | 2017-01-05  | 46    | 111              |
+| jack  | 2017-01-08  | 55    | 111              |
+| jack  | 2017-01-01  | 10    | 111              |
+| jack  | 2017-02-03  | 23    | 23               |
+| jack  | 2017-04-06  | 42    | 42               |
+| mart  | 2017-04-13  | 94    | 299              |
+| mart  | 2017-04-11  | 75    | 299              |
+| mart  | 2017-04-09  | 68    | 299              |
+| mart  | 2017-04-08  | 62    | 299              |
+| neil  | 2017-05-10  | 12    | 12               |
+| neil  | 2017-06-12  | 80    | 80               |
+| tony  | 2017-01-04  | 29    | 94               |
+| tony  | 2017-01-02  | 15    | 94               |
+| tony  | 2017-01-07  | 50    | 94               |
++-------+-------------+-------+------------------+
+
+
+
+需求三: 将每个顾客的cost按照日期进行累加
+
+select 
+  name, 
+  orderdate,
+  cost,
+  sum(cost) over(partition by name order by orderdate rows between UNBOUNDED PRECEDING and CURRENT ROW) lj
+from 
+  business 
+
+select 
+  name, 
+  orderdate,
+  cost,
+  sum(cost) over(partition by name order by orderdate ) lj
+from 
+  business   
++-------+-------------+-------+------+
+| name  |  orderdate  | cost  |  lj  |
++-------+-------------+-------+------+
+| jack  | 2017-01-01  | 10    | 10   |
+| jack  | 2017-01-05  | 46    | 56   |
+| jack  | 2017-01-08  | 55    | 111  |
+| jack  | 2017-02-03  | 23    | 134  |
+| jack  | 2017-04-06  | 42    | 176  |
+| mart  | 2017-04-08  | 62    | 62   |
+| mart  | 2017-04-09  | 68    | 130  |
+| mart  | 2017-04-11  | 75    | 205  |
+| mart  | 2017-04-13  | 94    | 299  |
+| neil  | 2017-05-10  | 12    | 12   |
+| neil  | 2017-06-12  | 80    | 92   |
+| tony  | 2017-01-02  | 15    | 15   |
+| tony  | 2017-01-04  | 29    | 44   |
+| tony  | 2017-01-07  | 50    | 94   |
++-------+-------------+-------+------+
+
+
+需求三: 将所有顾客的cost按照日期进行累加
+
+select 
+  name, 
+  orderdate,
+  cost,
+  sum(cost) over(order by orderdate ) lj
+from 
+  business 
++-------+-------------+-------+------+
+| name  |  orderdate  | cost  |  lj  |
++-------+-------------+-------+------+
+| jack  | 2017-01-01  | 10    | 10   |
+| tony  | 2017-01-02  | 15    | 25   |
+| tony  | 2017-01-04  | 29    | 54   |
+| jack  | 2017-01-05  | 46    | 100  |
+| tony  | 2017-01-07  | 50    | 150  |
+| jack  | 2017-01-08  | 55    | 205  |
+| jack  | 2017-02-03  | 23    | 228  |
+| jack  | 2017-04-06  | 42    | 270  |
+| mart  | 2017-04-08  | 62    | 332  |
+| mart  | 2017-04-09  | 68    | 400  |
+| mart  | 2017-04-11  | 75    | 475  |
+| mart  | 2017-04-13  | 94    | 569  |
+| neil  | 2017-05-10  | 12    | 581  |
+| neil  | 2017-06-12  | 80    | 661  |
++-------+-------------+-------+------+
+
+需求三: 求所有顾客的购买明细及按照日期进行排序后
+       求 所有顾客的cost  第一行 到 当前行 累加
+          所有顾客的cost 上一行 到 当前行 的累加和 
+          所有顾客的cost 上一行 到 下一行 的累加和
+          所有顾客的cost 当前行 到 下一行 的累加和
+          所有顾客的cost 当前行 到 最后一行的累加和
+
+
+select
+  name,
+  orderdate,
+  cost,
+  sum(cost) over(order by orderdate rows between UNBOUNDED PRECEDING and CURRENT ROW) f_c,
+  sum(cost) over(order by orderdate rows between 1 PRECEDING and CURRENT ROW ) p_c,
+  sum(cost) over(order by orderdate rows between 1 PRECEDING and 1 FOLLOWING ) p_n,
+  sum(cost) over(order by orderdate rows between CURRENT ROW and 1 FOLLOWING ) c_n,
+  sum(cost) over(order by orderdate rows between CURRENT ROW and UNBOUNDED FOLLOWING ) c_l
+from
+  business
++-------+-------------+-------+------+------+------+------+------+
+| name  |  orderdate  | cost  | f_c  | p_c  | p_n  | c_n  | c_l  |
++-------+-------------+-------+------+------+------+------+------+
+| jack  | 2017-01-01  | 10    | 10   | 10   | 25   | 25   | 661  |
+| tony  | 2017-01-02  | 15    | 25   | 25   | 54   | 44   | 651  |
+| tony  | 2017-01-04  | 29    | 54   | 44   | 90   | 75   | 636  |
+| jack  | 2017-01-05  | 46    | 100  | 75   | 125  | 96   | 607  |
+| tony  | 2017-01-07  | 50    | 150  | 96   | 151  | 105  | 561  |
+| jack  | 2017-01-08  | 55    | 205  | 105  | 128  | 78   | 511  |
+| jack  | 2017-02-03  | 23    | 228  | 78   | 120  | 65   | 456  |
+| jack  | 2017-04-06  | 42    | 270  | 65   | 127  | 104  | 433  |
+| mart  | 2017-04-08  | 62    | 332  | 104  | 172  | 130  | 391  |
+| mart  | 2017-04-09  | 68    | 400  | 130  | 205  | 143  | 329  |
+| mart  | 2017-04-11  | 75    | 475  | 143  | 237  | 169  | 261  |
+| mart  | 2017-04-13  | 94    | 569  | 169  | 181  | 106  | 186  |
+| neil  | 2017-05-10  | 12    | 581  | 106  | 186  | 92   | 92   |
+| neil  | 2017-06-12  | 80    | 661  | 92   | 92   | 80   | 80   |
++-------+-------------+-------+------+------+------+------+------+
+
+
+需求四: 查询每个顾客上次的购买时间 及 下一次的购买时间 
+select
+   name,
+   cost, 
+   orderdate c_orderdate,
+   lag(orderdate ,1 ,'1970-01-01') over(partition by name  order by orderdate) p_orderdate,
+   lead(orderdate ,1 ,'9999-01-01') over(partition by name  order by orderdate) p_orderdate
+from 
+  business
+
++-------+-------+--------------+--------------+--------------+
+| name  | cost  | c_orderdate  | p_orderdate  | p_orderdate  |
++-------+-------+--------------+--------------+--------------+
+| jack  | 10    | 2017-01-01   | 1970-01-01   | 2017-01-05   |
+| jack  | 46    | 2017-01-05   | 2017-01-01   | 2017-01-08   |
+| jack  | 55    | 2017-01-08   | 2017-01-05   | 2017-02-03   |
+| jack  | 23    | 2017-02-03   | 2017-01-08   | 2017-04-06   |
+| jack  | 42    | 2017-04-06   | 2017-02-03   | 9999-01-01   |
+| mart  | 62    | 2017-04-08   | 1970-01-01   | 2017-04-09   |
+| mart  | 68    | 2017-04-09   | 2017-04-08   | 2017-04-11   |
+| mart  | 75    | 2017-04-11   | 2017-04-09   | 2017-04-13   |
+| mart  | 94    | 2017-04-13   | 2017-04-11   | 9999-01-01   |
+| neil  | 12    | 2017-05-10   | 1970-01-01   | 2017-06-12   |
+| neil  | 80    | 2017-06-12   | 2017-05-10   | 9999-01-01   |
+| tony  | 15    | 2017-01-02   | 1970-01-01   | 2017-01-04   |
+| tony  | 29    | 2017-01-04   | 2017-01-02   | 2017-01-07   |
+| tony  | 50    | 2017-01-07   | 2017-01-04   | 9999-01-01   |
++-------+-------+--------------+--------------+--------------+
+
+
+需求五: 查询前20%时间的订单信息
+
+select 
+  t1.name, 
+  t1.orderdate,
+  t1.cost ,
+  t1.gid
+from 
+(select
+  name, 
+  orderdate,
+  cost, 
+  ntile(5) over(order by orderdate ) gid
+from 
+  business) t1
+where t1.gid = 1 ; 
+
++----------+---------------+----------+---------+
+| t1.name  | t1.orderdate  | t1.cost  | t1.gid  |
++----------+---------------+----------+---------+
+| jack     | 2017-01-01    | 10       | 1       |
+| tony     | 2017-01-02    | 15       | 1       |
+| tony     | 2017-01-04    | 29       | 1       |
++----------+---------------+----------+---------+
+
+
+
+总结: 
+over(): 会为每条数据都开启一个窗口. 默认的窗口大小就是当前数据集的大小.
+over(partition by ....) : 会按照指定的字段进行分区， 将分区字段的值相同的数据划分到相同的区。
+                          每个区中的每条数据都会开启一个窗口.每条数据的窗口大小默认为当前分区数据集的大小.
+over(order by ....) : 会在窗口中按照指定的字段对数据进行排序. 
+                      会为每条数据都开启一个窗口,默认的窗口大小为从数据集开始到当前行.  
+
+over(partition by .... order by ....) :会按照指定的字段进行分区， 将分区字段的值相同的数据划分到相同的区,
+                                       在每个区中会按照指定的字段进行排序. 
+                                       会为每条数据都开启一个窗口,默认的窗口大小为当前分区中从数据集开始到当前行.                                             
+over(partition by ... order by ... rows between ... and ....) : 指定每条数据的窗口大小.
+
+关键字:
+  order by :       全局排序 或者 窗口函数中排序.
+  distribute by :  分区 
+  sort by :        区内排序
+  cluster by :     分区排序
+  partition by :   窗口函数中分区
+  partitioned by : 建表指定分区字段
+  clustered by :   建表指定分桶字段
+  
+==============================================================
+4. 排名函数
+  1) 相关函数
+     rank()
+     dense_rank()
+     row_number()  
+  2) 数据
++-------------+----------------+--------------+
+| score.name  | score.subject  | score.score  |
++-------------+----------------+--------------+
+| 孙悟空        | 语文             | 87           |
+| 孙悟空        | 数学             | 95           |
+| 孙悟空        | 英语             | 68           |
+| 大海          | 语文             | 94           |
+| 大海          | 数学             | 56           |
+| 大海          | 英语             | 84           |
+| 宋宋          | 语文             | 64           |
+| 宋宋          | 数学             | 86           |
+| 宋宋          | 英语             | 84           |
+| 婷婷          | 语文             | 65           |
+| 婷婷          | 数学             | 85           |
+| 婷婷          | 英语             | 78           |
++-------------+----------------+--------------+
+
+  3）需求: 按照学科进行排名
+select
+  name, 
+  subject,
+  score,
+  rank() over(partition by subject order by score desc ) rk,
+  dense_rank() over(partition by subject order by score desc ) drk ,
+  row_number() over(partition by subject order by score desc ) rn
+from
+  score 
++-------+----------+--------+-----+------+-----+
+| name  | subject  | score  | rk  | drk  | rn  |
++-------+----------+--------+-----+------+-----+
+| 孙悟空  | 数学       | 95     | 1   | 1    | 1   |
+| 宋宋    | 数学       | 86     | 2   | 2    | 2   |
+| 婷婷    | 数学       | 85     | 3   | 3    | 3   |
+| 大海    | 数学       | 56     | 4   | 4    | 4   |
+| 宋宋    | 英语       | 84     | 1   | 1    | 1   |
+| 大海    | 英语       | 84     | 1   | 1    | 2   |
+| 婷婷    | 英语       | 78     | 3   | 2    | 3   |
+| 孙悟空  | 英语       | 68     | 4   | 3    | 4   |
+| 大海    | 语文       | 94     | 1   | 1    | 1   |
+| 孙悟空  | 语文       | 87     | 2   | 2    | 2   |
+| 婷婷    | 语文       | 65     | 3   | 3    | 3   |
+| 宋宋    | 语文       | 64     | 4   | 4    | 4   |
++-------+----------+--------+-----+------+-----+
+
+     
+  

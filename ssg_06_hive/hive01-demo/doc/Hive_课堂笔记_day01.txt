@@ -1,0 +1,60 @@
+魏 运慧
+
+Hive   flume   kafka  采集项目  hbase ....
+
+1. 卸载Linux自带的mysql
+   1） 查自带的软件 
+   CentOS6->mysql   CentOS7 ->mariadb
+   rpm -qa | grep  -i  -E mysql\|mariadb
+
+   2) 卸载
+   sudo rpm -e --nodeps mariadb-libs-5.5.56-2.el7.x86_64
+   sudo rpm -e --nodeps mysql-community-common-5.7.16-1.el7.x86_64
+   rpm -qa | grep  -i  -E mysql\|mariadb | xargs -n1 sudo rpm -e --nodeps 
+
+
+
+2. 启动metastore服务  和  hiveserver2服务
+
+  nohup hive --service  hiveserver2 >/opt/module/hive-3.1.2/logs/hiveServer2.log 2>&1 &
+
+  nohup hive --service  metastore >/opt/module/hive-3.1.2/logs/metastore.log 2>&1 &
+
+
+3. 基本类型
+   int  bigint double  string
+
+   create table  test1(
+     id  int ,
+     phonenum bigint , 
+     salary double ,
+     name string
+   );
+
+   insert into test1 values (1001, 13888888888,10000.11,"zhangsan");
+
+4. 集合类型
+   songsong,bingbing_lili,xiao song:18_xiaoxiao song:19,hui long guan_beijing
+   yangyang,caicai_susu,xiao yang:18_xiaoxiao yang:19,chao yang_beijing
+
+   create table test2(
+     name string , 
+     friends array<string>,
+     childrens map<string,int>,
+     address struct<street:string,city:string>
+   )
+   row format delimited fields terminated by ','
+   collection items terminated by '_'
+   map keys terminated by ':'
+   lines terminated by '\n';
+
+   load data local inpath  '/opt/module/hive-3.1.2/datas/person.txt' into table test2; 
+
+
+
+
+
+
+
+
+

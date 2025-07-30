@@ -1,0 +1,545 @@
+1. 统计视频观看数Top10
+
+select 
+  videoId,
+  views 
+from 
+  gulivideo_orc 
+order by views desc 
+limit 10 ;
++--------------+-----------+
+|   videoid    |   views   |
++--------------+-----------+
+| dMH0bHeiRNg  | 42513417  |
+| 0XxI-hvPRRA  | 20282464  |
+| 1dmVU08zVpA  | 16087899  |
+| RB-wUgnyGv0  | 15712924  |
+| QjA5faZF1A8  | 15256922  |
+| -_CSo1gOd48  | 13199833  |
+| 49IDp76kjPw  | 11970018  |
+| tYnn51C3X_w  | 11823701  |
+| pv5zWaTEVkI  | 11672017  |
+| D2kJZOfq7zk  | 11184051  |
++--------------+-----------+
+
+
+2. 统计视频类别热度Top10 (通过类别下包含的视频个数衡量热度)
+1）炸开视频的类别
+select 
+  videoId,
+  category_name
+from gulivideo_orc
+lateral view explode(category) gulivideo_orc_tmp as category_name  =>t1
+
+2) 按照列别分组，求每个组中视频个数
+
+select
+  t1.category_name,
+  count(t1.videoId) hot
+from
+  (
+select 
+  videoId,
+  category_name
+from gulivideo_orc
+lateral view explode(category) gulivideo_orc_tmp as category_name
+  )t1
+group by t1.category_name 
+order by hot desc 
+limit 10 ; 
+
++-------------------+---------+
+| t1.category_name  |   hot   |
++-------------------+---------+
+| Music             | 179049  |
+| Entertainment     | 127674  |
+| Comedy            | 87818   |
+| Animation         | 73293   |
+| Film              | 73293   |
+| Sports            | 67329   |
+| Games             | 59817   |
+| Gadgets           | 59817   |
+| People            | 48890   |
+| Blogs             | 48890   |
++-------------------+---------+
+
+
+3. 统计出视频观看数最高的20个视频的所属类别以及类别包含Top20视频的个数
+
+1) 视频观看数最高的20个视频的所属类别
+select
+  videoId,
+  views ,
+  category
+from 
+  gulivideo_orc
+order by views desc 
+limit 20     =>t1 
+
++--------------+-----------+---------------------+
+|   videoid    |   views   |      category       |
++--------------+-----------+---------------------+
+| dMH0bHeiRNg  | 42513417  | ["Comedy"]          |
+| 0XxI-hvPRRA  | 20282464  | ["Comedy"]          |
+| 1dmVU08zVpA  | 16087899  | ["Entertainment"]   |
+| RB-wUgnyGv0  | 15712924  | ["Entertainment"]   |
+| QjA5faZF1A8  | 15256922  | ["Music"]           |
+| -_CSo1gOd48  | 13199833  | ["People","Blogs"]  |
+| 49IDp76kjPw  | 11970018  | ["Comedy"]          |
+| tYnn51C3X_w  | 11823701  | ["Music"]           |
+| pv5zWaTEVkI  | 11672017  | ["Music"]           |
+| D2kJZOfq7zk  | 11184051  | ["People","Blogs"]  |
+| vr3x_RRJdd4  | 10786529  | ["Entertainment"]   |
+| lsO6D1rwrKc  | 10334975  | ["Entertainment"]   |
+| 5P6UU6m3cqk  | 10107491  | ["Comedy"]          |
+| 8bbTtPL1jRs  | 9579911   | ["Music"]           |
+| _BuRwH59oAo  | 9566609   | ["Comedy"]          |
+| aRNzWyD7C9o  | 8825788   | ["UNA"]             |
+| UMf40daefsI  | 7533070   | ["Music"]           |
+| ixsZy2425eY  | 7456875   | ["Entertainment"]   |
+| MNxwAU_xAMk  | 7066676   | ["Comedy"]          |
+| RUCZJVJ_M8o  | 6952767   | ["Entertainment"]   |
++--------------+-----------+---------------------+
+
+2) 炸开视频的类别
+
+select
+  t1.videoId,
+  category_name
+from 
+ (
+select
+  videoId,
+  views ,
+  category
+from 
+  gulivideo_orc
+order by views desc 
+limit 20   
+ )t1
+lateral view explode(t1.category) t1_tmp as category_name  =>t2
++--------------+----------------+
+|  t1.videoid  | category_name  |
++--------------+----------------+
+| dMH0bHeiRNg  | Comedy         |
+| 0XxI-hvPRRA  | Comedy         |
+| 1dmVU08zVpA  | Entertainment  |
+| RB-wUgnyGv0  | Entertainment  |
+| QjA5faZF1A8  | Music          |
+| -_CSo1gOd48  | People         |
+| -_CSo1gOd48  | Blogs          |
+| 49IDp76kjPw  | Comedy         |
+| tYnn51C3X_w  | Music          |
+| pv5zWaTEVkI  | Music          |
+| D2kJZOfq7zk  | People         |
+| D2kJZOfq7zk  | Blogs          |
+| vr3x_RRJdd4  | Entertainment  |
+| lsO6D1rwrKc  | Entertainment  |
+| 5P6UU6m3cqk  | Comedy         |
+| 8bbTtPL1jRs  | Music          |
+| _BuRwH59oAo  | Comedy         |
+| aRNzWyD7C9o  | UNA            |
+| UMf40daefsI  | Music          |
+| ixsZy2425eY  | Entertainment  |
+| MNxwAU_xAMk  | Comedy         |
+| RUCZJVJ_M8o  | Entertainment  |
++--------------+----------------+
+
+3) 按照类别分组,求每个类别下的视频个数
+
+select 
+  t2.category_name,
+  count(t2.videoId) video_num
+from 
+ (
+select
+  t1.videoId,
+  category_name
+from 
+ (
+select
+  videoId,
+  views ,
+  category
+from 
+  gulivideo_orc
+order by views desc 
+limit 20   
+ )t1
+lateral view explode(t1.category) t1_tmp as category_name
+)t2
+group by t2.category_name ;
+
++-------------------+------------+
+| t2.category_name  | video_num  |
++-------------------+------------+
+| Blogs             | 2          |
+| Comedy            | 6          |
+| Entertainment     | 6          |
+| Music             | 5          |
+| People            | 2          |
+| UNA               | 1          |
++-------------------+------------+
+
+
+4. 统计视频观看数Top50所关联视频的所属类别排名
+1) 统计视频观看数Top50所关联视频
+select
+  videoId,
+  views,
+  relatedId
+from 
+ gulivideo_orc
+order by views desc 
+limit 50   =>t1
+
+2) 炸开关联视频
+
+select 
+   relatedId_video
+from 
+(select
+  videoId,
+  views,
+  relatedId
+from 
+ gulivideo_orc
+order by views desc 
+limit 50)t1
+lateral view explode(t1.relatedId) t1_tmp as relatedId_video  => t2
+
+3) 关联原表， 求每个关联视频的类别
+
+select
+  t2.relatedId_video,
+  t3.category
+from 
+  (
+select 
+   relatedId_video
+from 
+(select
+  videoId,
+  views,
+  relatedId
+from 
+ gulivideo_orc
+order by views desc 
+limit 50)t1
+lateral view explode(t1.relatedId) t1_tmp as relatedId_video
+  )t2
+join 
+  gulivideo_orc t3 
+on t2.relatedId_video = t3.videoId  => t4 
+
+4) 炸开类别
+
+select 
+  t4.relatedId_video,
+  category_name
+from 
+(
+select
+  t2.relatedId_video,
+  t3.category
+from 
+  (
+select 
+   relatedId_video
+from 
+(select
+  videoId,
+  views,
+  relatedId
+from 
+ gulivideo_orc
+order by views desc 
+limit 50)t1
+lateral view explode(t1.relatedId) t1_tmp as relatedId_video
+  )t2
+join 
+  gulivideo_orc t3 
+on t2.relatedId_video = t3.videoId
+)t4
+lateral view explode(t4.category) t4_tmp as category_name  =>t5
+
+5) 按照类别分组，求统计
+select
+   t5.category_name,
+   count(t5.relatedId_video) video_num
+from 
+ (
+select 
+  t4.relatedId_video,
+  category_name
+from 
+(
+select
+  t2.relatedId_video,
+  t3.category
+from 
+  (
+select 
+   relatedId_video
+from 
+(select
+  videoId,
+  views,
+  relatedId
+from 
+ gulivideo_orc
+order by views desc 
+limit 50)t1
+lateral view explode(t1.relatedId) t1_tmp as relatedId_video
+  )t2
+join 
+  gulivideo_orc t3 
+on t2.relatedId_video = t3.videoId
+)t4
+lateral view explode(t4.category) t4_tmp as category_name
+)t5
+group by t5.category_name  => t6
+
+6) 求排名
+select 
+  t6.category_name,
+  t6.video_num,
+  rank() over(order by t6.video_num desc ) rk
+from 
+(
+select
+   t5.category_name,
+   count(t5.relatedId_video) video_num
+from 
+ (
+select 
+  t4.relatedId_video,
+  category_name
+from 
+(
+select
+  t2.relatedId_video,
+  t3.category
+from 
+  (
+select 
+   relatedId_video
+from 
+(select
+  videoId,
+  views,
+  relatedId
+from 
+ gulivideo_orc
+order by views desc 
+limit 50)t1
+lateral view explode(t1.relatedId) t1_tmp as relatedId_video
+  )t2
+join 
+  gulivideo_orc t3 
+on t2.relatedId_video = t3.videoId
+)t4
+lateral view explode(t4.category) t4_tmp as category_name
+)t5
+group by t5.category_name 
+)t6 ;
+
++-------------------+---------------+-----+
+| t6.category_name  | t6.video_num  | rk  |
++-------------------+---------------+-----+
+| Comedy            | 237           | 1   |
+| Entertainment     | 216           | 2   |
+| Music             | 195           | 3   |
+| Blogs             | 51            | 4   |
+| People            | 51            | 4   |
+| Film              | 47            | 6   |
+| Animation         | 47            | 6   |
+| News              | 24            | 8   |
+| Politics          | 24            | 8   |
+| Games             | 22            | 10  |
+| Gadgets           | 22            | 10  |
+| Sports            | 19            | 12  |
+| Howto             | 14            | 13  |
+| DIY               | 14            | 13  |
+| UNA               | 13            | 15  |
+| Places            | 12            | 16  |
+| Travel            | 12            | 16  |
+| Animals           | 11            | 18  |
+| Pets              | 11            | 18  |
+| Autos             | 4             | 20  |
+| Vehicles          | 4             | 20  |
+
+
+5.统计每个类别中的视频热度Top10，以Music为例
+1) 炸开类别
+select 
+  videoId,
+  category_name,
+  views
+from 
+ gulivideo_orc
+lateral view explode(category) gulivideo_orc_tmp as category_name =>t1
+
+2) 求Music类别下的top10
+select
+  t1.videoId,
+  t1.category_name,
+  t1.views
+from 
+(select 
+  videoId,
+  category_name,
+  views
+from 
+ gulivideo_orc
+lateral view explode(category) gulivideo_orc_tmp as category_name)t1
+where t1.category_name = 'Music'
+order by t1.views desc
+limit 10
+
++--------------+-------------------+-----------+
+|  t1.videoid  | t1.category_name  | t1.views  |
++--------------+-------------------+-----------+
+| QjA5faZF1A8  | Music             | 15256922  |
+| tYnn51C3X_w  | Music             | 11823701  |
+| pv5zWaTEVkI  | Music             | 11672017  |
+| 8bbTtPL1jRs  | Music             | 9579911   |
+| UMf40daefsI  | Music             | 7533070   |
+| -xEzGIuY7kw  | Music             | 6946033   |
+| d6C0bNDqf3Y  | Music             | 6935578   |
+| HSoVKUVOnfQ  | Music             | 6193057   |
+| 3URfWTEPmtE  | Music             | 5581171   |
+| thtmaZnxk_0  | Music             | 5142238   |
++--------------+-------------------+-----------+
+
+
+6.统计每个类别视频观看数Top10
+1). 炸开类别
+select 
+  videoId,
+  category_name,
+  views
+from 
+ gulivideo_orc
+lateral view explode(category) gulivideo_orc_tmp as category_name =>t1 
+
+2) 开窗, 按照类别分区,观看数排序，求排名
+
+select 
+  t1.videoId,
+  t1.category_name,
+  t1.views.
+  rank() over(partition by t1.category_name order by t1.views desc ) rk 
+from 
+ (
+select 
+  videoId,
+  category_name,
+  views
+from 
+ gulivideo_orc
+lateral view explode(category) gulivideo_orc_tmp as category_name 
+ )t1   =>t2
+
+ 3) 求top10 
+
+select 
+  t2.videoId,
+  t2.category_name,
+  t2.views ,
+  t2.rk
+from 
+ (
+select 
+  t1.videoId,
+  t1.category_name,
+  t1.views ,
+  rank() over(partition by t1.category_name order by t1.views desc ) rk 
+from 
+ (
+select 
+  videoId,
+  category_name,
+  views
+from 
+ gulivideo_orc
+lateral view explode(category) gulivideo_orc_tmp as category_name 
+ )t1 
+)t2
+where t2.rk <=10 ; 
+
+
+7.统计上传视频最多的用户Top10以及他们上传的视频观看次数在前20的视频
+1) 统计上传视频最多的用户Top10
+
+select
+  uploader,
+  videos
+from
+  gulivideo_user_orc
+order by videos desc 
+limit 10  =>t1
++---------------------+---------+
+|      uploader       | videos  |
++---------------------+---------+
+| expertvillage       | 86228   |
+| TourFactory         | 49078   |
+| myHotelVideo        | 33506   |
+| AlexanderRodchenko  | 24315   |
+| VHTStudios          | 20230   |
+| ephemeral8          | 19498   |
+| HSN                 | 15371   |
+| rattanakorn         | 12637   |
+| Ruchaneewan         | 10059   |
+| futifu              | 9668    |
++---------------------+---------+
+
+2) 关联视频表，求他们上传的视频
+
+select
+  t1.uploader,
+  t2.videoId,
+  t2.views
+from 
+ (
+select
+  uploader,
+  videos
+from
+  gulivideo_user_orc
+order by videos desc 
+limit 10
+ )t1
+join 
+ gulivideo_orc t2 
+on t1.uploader = t2.uploader
+order by t2.views desc 
+limit 20 ;
++----------------+--------------+-----------+
+|  t1.uploader   |  t2.videoid  | t2.views  |
++----------------+--------------+-----------+
+| expertvillage  | -IxHBW0YpZw  | 39059     |
+| expertvillage  | BU-fT5XI_8I  | 29975     |
+| expertvillage  | ADOcaBYbMl0  | 26270     |
+| expertvillage  | yAqsULIDJFE  | 25511     |
+| expertvillage  | vcm-t0TJXNg  | 25366     |
+| expertvillage  | 0KYGFawp14c  | 24659     |
+| expertvillage  | j4DpuPvMLF4  | 22593     |
+| expertvillage  | Msu4lZb2oeQ  | 18822     |
+| expertvillage  | ZHZVj44rpjE  | 16304     |
+| expertvillage  | foATQY3wovI  | 13576     |
+| expertvillage  | -UnQ8rcBOQs  | 13450     |
+| expertvillage  | crtNd46CDks  | 11639     |
+| expertvillage  | D1leA0JKHhE  | 11553     |
+| expertvillage  | NJu2oG1Wm98  | 11452     |
+| expertvillage  | CapbXdyv4j4  | 10915     |
+| expertvillage  | epr5erraEp4  | 10817     |
+| expertvillage  | IyQoDgaLM7U  | 10597     |
+| expertvillage  | tbZibBnusLQ  | 10402     |
+| expertvillage  | _GnCHodc7mk  | 9422      |
+| expertvillage  | hvEYlSlRitU  | 7123      |
++----------------+--------------+-----------+
+
+
+
+

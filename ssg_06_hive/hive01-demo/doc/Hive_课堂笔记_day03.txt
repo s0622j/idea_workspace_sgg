@@ -1,0 +1,311 @@
+1. join
+
+  1) Join方式 
+
+  内连接   A inner join B  on ....
+     内连接的结果集取交集
+
+
+  外连接  
+    主表(驱动表) 和  从表(匹配表)
+    外连接的结果集主表的所有数据 +  从表中与主表匹配的数据. 
+
+    左外连接  A left outer join B  on ....    A 主 B 从
+             B right outer Join A  on.... 
+
+    右外连接  A right outer join B  on ....   A 从 B 主
+             B left outer join  A  on ....
+
+
+  自连接  满外连接(full outer join ) 
+
+  2) emp 和 dept共有的数据(内连接)
+select
+  e.ename, d.deptno 
+from
+ emp e inner join dept  d
+on e.deptno = d.deptno 
+
+  3) emp所有的数据  和  dept中与emp匹配的数据
+
+select
+  e.ename, d.deptno
+from
+ emp e left outer join dept d 
+on e.deptno = d.deptno  ; 
+
+
+select
+  e.ename, d.deptno
+from
+ dept d right outer join emp e 
+on e.deptno = d.deptno  ; 
+
+
+  4) dept中所有的数据 和  emp中与dept匹配的数据
+
+select
+ e.ename, d.deptno
+from
+dept d left outer join emp e 
+on d.deptno = e.deptno ;
+
+select
+ e.ename, d.deptno
+from
+emp e  right outer join dept d 
+on d.deptno = e.deptno ;
+
+  5) emp表独有的数据
+select
+  e.ename, d.deptno
+from
+ emp e left outer join dept d 
+on e.deptno = d.deptno  
+where 
+   d.deptno is null  
+
+   6) dept表独有的数据
+select
+ e.ename, d.deptno
+from
+dept d left outer join emp e 
+on d.deptno = e.deptno 
+where
+   e.deptno is null ;
+
+   7) emp 和 dept 所有的数据(全外连接，满外连接)
+union all : 将结果集拼接到一起，不去重
+union: 将结果集拼接到一起，去重
+
+select
+  e.ename, d.deptno
+from
+ emp e left outer join dept d 
+on e.deptno = d.deptno  
+union all
+select
+ e.ename, d.deptno
+from
+dept d left outer join emp e 
+on d.deptno = e.deptno ;
+
+select
+  e.ename, d.deptno
+from
+ emp e left outer join dept d 
+on e.deptno = d.deptno  
+union
+select
+ e.ename, d.deptno
+from
+dept d left outer join emp e 
+on d.deptno = e.deptno ;
+
+
+
+select
+  e.ename, d.deptno
+from
+ emp e full outer join dept d 
+on e.deptno = d.deptno ;
+  
+
+   8) emp 和 dept 独有的数据
+
+select
+  e.ename, d.deptno
+from
+ emp e full outer join dept d 
+on e.deptno = d.deptno 
+where 
+   e.deptno is null 
+or 
+   d.deptno is null ;
+
+   9) 查询 员工名  部门名  位置名 
+select
+  e.ename, d.dname, l.loc_name
+from
+  emp e inner join dept d
+on e.deptno = d.deptno  
+  inner join location l 
+on d.loc = l.loc  ;  
+
+
+2. 分区表
+  1） 创建分区表 
+create table dept_partition (
+  deptno int ,
+  dname string,
+  loc string 
+) 
+partitioned by (day string ) 
+row format delimited fields terminated by '\t' ;
+
+  2) 往分区表加载数据
+load data local inpath '/opt/module/hive-3.1.2/datas/dept_20200401.log'  
+                   into table dept_partition partition(day='20200401') ; 
+
+load data local inpath '/opt/module/hive-3.1.2/datas/dept_20200402.log'  
+                   into table dept_partition partition(day='20200402') ;
+
+load data local inpath '/opt/module/hive-3.1.2/datas/dept_20200403.log'  
+                   into table dept_partition partition(day='20200403') ;
+
+  3） 分区操作
+查分区:
+show partitions dept_partition ;     
+
+加分区: 
+alter table dept_partition add partition(day='20200404');
+alter table dept_partition add partition(day='20200405') partition(day='20200406') ;
+
+删分区:
+alter table dept_partition drop partition(day='20200404');
+alter table dept_partition drop partition(day='20200405') , partition(day='20200406');
+   
+  4) 二级分区表
+create table dept_partition2(
+  deptno int, 
+  dname string, 
+  loc string 
+)
+partitioned by (day string ,hour string )
+row format delimited fields terminated by '\t' ;
+
+load data local inpath '/opt/module/hive-3.1.2/datas/dept_20200401.log'  
+                   into table dept_partition2 partition(day='20200401',hour='12') ; 
+
+load data local inpath '/opt/module/hive-3.1.2/datas/dept_20200402.log'  
+                   into table dept_partition2 partition(day='20200401',hour='13') ;
+
+load data local inpath '/opt/module/hive-3.1.2/datas/dept_20200403.log'  
+                   into table dept_partition2 partition(day='20200401',hour='14') ;
+
+load data local inpath '/opt/module/hive-3.1.2/datas/dept_20200401.log'  
+                   into table dept_partition2 partition(day='20200402',hour='07') ; 
+
+load data local inpath '/opt/module/hive-3.1.2/datas/dept_20200402.log'  
+                   into table dept_partition2 partition(day='20200402',hour='08') ;
+
+load data local inpath '/opt/module/hive-3.1.2/datas/dept_20200403.log'  
+                   into table dept_partition2 partition(day='20200402',hour='09') ;                   
+
+   5) 数据和分区表关联的方式
+
+①  手动创建分区目录，手动上传数据 , 进行分区修复操作
+hadoop fs -mkdir /user/hive/warehouse/mydb.db/dept_partition/day=20200404 
+hadoop fs -put /opt/module/hive-3.1.2/datas/dept_20200403.log  /user/hive/warehouse/mydb.db/dept_partition/day=20200404
+msck repair table dept_partition;
+
+②  手动创建分区目录，手动上传数据 , 手动添加分区
+hadoop fs -mkdir /user/hive/warehouse/mydb.db/dept_partition/day=20200405 
+hadoop fs -put /opt/module/hive-3.1.2/datas/dept_20200403.log  /user/hive/warehouse/mydb.db/dept_partition/day=20200405
+alter table dept_partition add partition(day='20200405');
+
+③  手动创建分区目录,load数据到分区中
+hadoop fs -mkdir /user/hive/warehouse/mydb.db/dept_partition/day=20200406
+load data local inpath '/opt/module/hive-3.1.2/datas/dept_20200403.log' into table dept_partition partition(day='20200406')
+
+
+   6) 动态分区
+create table dept_partition_dy(
+   deptno int, 
+   dname string, 
+   loc string
+)
+partitioned by (day string)
+row format delimited fields terminated by '\t';
+
+load data  inpath '/dept_partition_dy.txt' into table dept_partition_dy ;
+
+
+create table dept_dy(
+   deptno int, 
+   dname string, 
+   loc string,
+   day string 
+)
+row format delimited fields terminated by '\t';
+
+load data local inpath '/opt/module/hive-3.1.2/datas/dept_partition_dy.txt' into table dept_dy ; 
+
+
+3. 分桶表
+   1） 创建分桶表
+create table student_bucket(
+  id int, 
+  name string 
+)
+clustered by (id)
+into 4 buckets 
+row format delimited fields terminated by '\t' ;   
+
+load  data  inpath '/student.txt' into table student_bucket ;
+
+
+4. 多维分析
+
+create table testgrouping (
+  id int, 
+  name string, 
+  sex string, 
+  deptno int 
+)
+row format delimited fields terminated by ',';
+
+1001,zhangsan,man,10
+1002,xiaohua,female,10
+1003,lisi,man,20
+1004,xiaohong,female,20
+
+需求:  统计每个部门各多少人， 
+      男女各多少人， 
+      每个部门中男女各多少人 
+
+select deptno, sex ,count(id) from testgrouping group by deptno,sex  grouping sets( (deptno,sex), sex , deptno )
+
+
+
+5. case when then else end 
+
+1) 数据 
++---------------+------------------+--------------+
+| emp_sex.name  | emp_sex.dept_id  | emp_sex.sex  |
++---------------+------------------+--------------+
+| 悟空            | A                | 男            |
+| 大海            | A                | 男            |
+| 宋宋            | B                | 男            |
+| 凤姐            | A                | 女            |
+| 婷姐            | B                | 女            |
+| 婷婷            | B                | 女            |
++---------------+------------------+--------------+
+
+2) 需求
+dept_Id   男      女
+A         2       1
+B         1       2
+
+
+3) SQL
+
+select 
+  dept_Id, 
+  sum(case sex when '男' then 1 else 0 end )   man, 
+  sum(case sex when '女' then 1 else 0 end )  female
+from
+  emp_sex 
+group by dept_Id ;
+
+
+select 
+  dept_Id, 
+  sum(if(sex='男',1,0))   man, 
+  sum(if(sex='女',1,0))  female
+from
+  emp_sex 
+group by dept_Id    
+
+
+
