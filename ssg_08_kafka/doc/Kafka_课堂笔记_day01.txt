@@ -1,0 +1,85 @@
+1.Kafka基础架构
+  1) Kafka集群
+     Kafka集群是由多个Broker组成的。 每个Broker拥有唯一的id.
+     Kafka集群中有多个Topic.每个Topic可有多个分区(partition),每个分区可有多个副本(replication).
+     一个Topic的多个分区可以存在到一个Broker中。 一个分区的多个副本只能在不同的broker存在.
+     一个分区的多个副本由一个leader和多个follower组成.
+     生产者和消费者读写数据面向leader. follower主要同步leader的数据。以及当leader故障后，follower代替leader工作.
+
+  2) 生产者
+     生成者的功能就是往topic中发布消息.
+
+  3) 消费者
+     消费者的功能就是从topic中消费消息.
+     消费者消费消息是以消费者组为单位进行的.
+     一个消费者组内的一个消费者可以同时消费一个topic中多个分区的消息. 
+     一个Topic中的一个分区的消息同时只能被一个消费者组中的一个消费者消费.
+
+  4) Zookeeper
+     Kafka集群的工作需要依赖zookeeper,例如每个broker启动后需要向zookeeper注册. 
+     Broker中大哥(controller)的选举(争抢策略)
+     Kafka 0.9版本之前消费者组的offset维护在zookeeper中. 0.9版本之后维护在kafka内部.
+
+ 2. Kafka起停脚本:
+    kafka.sh start|stop
+#!/bin/bash
+if [ $# -lt 1 ]
+then
+  echo "USAGE:kafka.sh {start|stop}"
+  exit
+fi
+
+case $1 in
+
+start)
+  for i in hadoop102 hadoop103 hadoop104
+  do
+    echo "=================> START $i KAFKA <=================="
+    ssh $i /opt/module/kafka_2.11-2.4.1/bin/kafka-server-start.sh -daemon /opt/module/kafka_2.11-2.4.1/config/server.properties
+  done
+;;
+stop)
+  for i in hadoop102 hadoop103 hadoop104
+  do
+    echo "=================> STOP $i KAFKA <=================="
+    ssh $i /opt/module/kafka_2.11-2.4.1/bin/kafka-server-stop.sh 
+  done
+;;
+*)
+  echo "USAGE:kafka.sh {start|stop}"
+  exit
+;;
+esac
+
+
+3. 命令行操作
+  1) 查看topic 列表
+     kafka-topics.sh  --list --bootstrap-server hadoop102:9092
+  2) 创建topic
+     kafka-topics.sh --create --bootstrap-server hadoop102:9092 --topic first
+
+     kafka-topics.sh --create --bootstrap-server hadoop102:9092 --topic second --partitions 2 --replication-factor 3
+  3) 查看Topic详情
+     kafka-topics.sh --describe --bootstrap-server hadoop102:9092 --topic first 
+
+  4) 修改Topic的分区数(只能改大)
+     kafka-topics.sh --describe --bootstrap-server hadoop102:9092 --topic first
+
+  5) 删除Topic
+     kafka-topics.sh --delete --bootstrap-server hadoop102:9092 --topic first    
+  
+  6) 生产者
+     kafka-console-producer.sh  --broker-list hadoop102:9092 --topic first   
+
+  7) 消费者消费数据offset重置问题:
+     新启动的消费者组中的消费者为何消费不到topic中的数据???
+
+  8) 消费者
+	  kafka-console-consumer.sh --bootstrap-server hadoop102:9092 --topic first
+
+      kafka-console-consumer.sh --bootstrap-server hadoop102:9092 --topic first --from-beginning 
+
+  9) 消费者组
+     kafka-console-consumer.sh --bootstrap-server hadoop102:9092 --topic first --consumer.config /opt/module/kafka_2.11-2.4.1/config/consumer.properties     
+
+     kafka-console-consumer.sh --bootstrap-server hadoop102:9092 --topic first --group aa            
