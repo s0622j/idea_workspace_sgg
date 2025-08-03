@@ -11,6 +11,7 @@
     <modules>
         <module>kafka_01</module>
         <module>kafka_02</module>
+        <module>kafka-demo</module>
     </modules>
 
     <properties>
