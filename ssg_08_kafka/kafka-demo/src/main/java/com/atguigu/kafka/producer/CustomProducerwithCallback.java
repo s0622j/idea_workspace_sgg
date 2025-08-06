@@ -35,7 +35,7 @@ public class CustomProducerwithCallback {
             String message="你好客官，我是"+i+"号，很高兴为您服务";
             // 5. 创建produerRecord
             final ProducerRecord<String, String> producerRecord = new ProducerRecord<String, String>(
-                "first",
+                "atguigu",
 //                "atguigu",
                     i+"",
                     message
